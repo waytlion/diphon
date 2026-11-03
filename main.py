@@ -180,6 +180,46 @@ def load_model_components(model_name):
         from src.metrics.val import WirelessSamplingMetrics as MetricsClass
         from src.dataset.wireless import WirelessDatasetModule as DatasetClass
         wandb_name = "metrofi-uncond-pe-nosf"
+    elif model_name == "cograph_dense":
+        from configs.config_cograph_dense import MainConfig
+        from src.metrics.val import CographDenseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-dense"
+    elif model_name == "cograph_sparse":
+        from configs.config_cograph_sparse import MainConfig
+        from src.metrics.val import CographSparseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-sparse"
+    elif model_name == "cograph_zinc_dense":
+        from configs.config_cograph_zinc_dense import MainConfig
+        from src.metrics.val import CographDenseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-zinc-dense"
+    elif model_name == "cograph_zinc_sparse":
+        from configs.config_cograph_zinc_sparse import MainConfig
+        from src.metrics.val import CographSparseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-zinc-sparse"
+    elif model_name == "cograph_proteins_dense":
+        from configs.config_cograph_proteins_dense import MainConfig
+        from src.metrics.val import CographDenseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-proteins-dense"
+    elif model_name == "cograph_proteins_sparse":
+        from configs.config_cograph_proteins_sparse import MainConfig
+        from src.metrics.val import CographSparseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-proteins-sparse"
+    elif model_name == "cograph_collab_dense":
+        from configs.config_cograph_collab_dense import MainConfig
+        from src.metrics.val import CographDenseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-collab-dense"
+    elif model_name == "cograph_collab_sparse":
+        from configs.config_cograph_collab_sparse import MainConfig
+        from src.metrics.val import CographSparseSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "cograph-collab-sparse"
     else:
         raise ValueError(f"Unknown model name: {model_name}")
     return MainConfig, MetricsClass, DatasetClass, wandb_name
@@ -1117,7 +1157,13 @@ def main():
         "--model",
         type=str,
         required=True,
-        choices=["pa", "sbm_2comms", "tree_graphon", "d_regular", "metrofi_cond", "metrofi_uncond"],
+        choices=[
+            "pa", "sbm_2comms", "tree_graphon", "d_regular", "metrofi_cond", "metrofi_uncond",
+            "cograph_dense", "cograph_sparse",
+            "cograph_zinc_dense", "cograph_zinc_sparse",
+            "cograph_proteins_dense", "cograph_proteins_sparse",
+            "cograph_collab_dense", "cograph_collab_sparse",
+        ],
         help="Specific diffusion model/config type to use."
     )
     parent_parser.add_argument("--seed", type=int, default=None, help="Override default config seed.")

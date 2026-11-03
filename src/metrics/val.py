@@ -956,6 +956,21 @@ def is_grid_graph(G):
         return False
 
 
+def is_valid_cograph_join(G):
+    """A graph is a valid join iff its complement is disconnected."""
+    if G.number_of_nodes() < 2:
+        return False
+    G_comp = nx.complement(G)
+    return not nx.is_connected(G_comp)
+
+
+def is_valid_cograph_union(G):
+    """A graph is a valid union iff the graph itself is disconnected."""
+    if G.number_of_nodes() < 2:
+        return False
+    return not nx.is_connected(G)
+
+
 def is_sbm_graph(G, p_intra=0.4, p_inter=0.005, strict=True, refinement_steps=100, seed=0):
     """
     Check if how closely given graph matches a SBM with given probabilites by computing mean probability of Wald test statistic for each recovered parameter
@@ -1496,6 +1511,89 @@ class SpectreSamplingMetrics(nn.Module):
                 wandb.run.summary["4_regular_acc"] = d_regular_acc
                 wandb.run.summary["4_regular_node_acc"] = d_regular_node_acc
 
+        if "cograph_join" in self.metrics_list:
+            if local_rank == 0:
+                print("Computing cograph join validity and subgraph metrics...")
+            valid_joins = [G for G in networkx_graphs if is_valid_cograph_join(G)]
+            join_valid = len(valid_joins) / len(networkx_graphs) if networkx_graphs else 0.0
+            to_log["cograph_join_acc"] = join_valid
+            if valid_joins:
+                conn_count = sum(
+                    1 for G in valid_joins
+                    if len(list(nx.connected_components(nx.complement(G)))) == 2
+                    and all(nx.is_connected(G.subgraph(c)) for c in nx.connected_components(nx.complement(G)))
+                )
+                subgraph_conn = conn_count / len(valid_joins)
+            else:
+                subgraph_conn = 0.0
+            to_log["cograph_join_subgraph_conn_acc"] = subgraph_conn
+
+            gen_subgraphs = []
+            for G in valid_joins:
+                for c in nx.connected_components(nx.complement(G)):
+                    if len(c) > 0:
+                        gen_subgraphs.append(G.subgraph(c).copy())
+
+            if gen_subgraphs and getattr(self, "train_graphs", None):
+                ref_subgraphs = []
+                for g in self.train_graphs[:len(networkx_graphs)]:
+                    if is_valid_cograph_join(g):
+                        for c in nx.connected_components(nx.complement(g)):
+                            ref_subgraphs.append(g.subgraph(c).copy())
+                if ref_subgraphs:
+                    sub_deg = degree_stats(ref_subgraphs, gen_subgraphs, is_parallel=True, compute_emd=self.compute_emd)
+                    sub_clust = clustering_stats(ref_subgraphs, gen_subgraphs, bins=100, is_parallel=True, compute_emd=self.compute_emd)
+                    to_log["subgraph_degree"] = sub_deg
+                    to_log["subgraph_clustering"] = sub_clust
+                    if wandb.run:
+                        wandb.run.summary["subgraph_degree"] = sub_deg
+                        wandb.run.summary["subgraph_clustering"] = sub_clust
+
+            if wandb.run:
+                wandb.run.summary["cograph_join_acc"] = join_valid
+                wandb.run.summary["cograph_join_subgraph_conn_acc"] = subgraph_conn
+
+        if "cograph_union" in self.metrics_list:
+            if local_rank == 0:
+                print("Computing cograph union validity and subgraph metrics...")
+            valid_unions = [G for G in networkx_graphs if is_valid_cograph_union(G)]
+            union_valid = len(valid_unions) / len(networkx_graphs) if networkx_graphs else 0.0
+            to_log["cograph_union_acc"] = union_valid
+            if valid_unions:
+                conn_count = sum(
+                    1 for G in valid_unions
+                    if nx.number_connected_components(G) == 2
+                )
+                subgraph_conn = conn_count / len(valid_unions)
+            else:
+                subgraph_conn = 0.0
+            to_log["cograph_union_subgraph_conn_acc"] = subgraph_conn
+
+            gen_subgraphs = []
+            for G in valid_unions:
+                for c in nx.connected_components(G):
+                    if len(c) > 0:
+                        gen_subgraphs.append(G.subgraph(c).copy())
+
+            if gen_subgraphs and getattr(self, "train_graphs", None):
+                ref_subgraphs = []
+                for g in self.train_graphs[:len(networkx_graphs)]:
+                    if is_valid_cograph_union(g):
+                        for c in nx.connected_components(g):
+                            ref_subgraphs.append(g.subgraph(c).copy())
+                if ref_subgraphs:
+                    sub_deg = degree_stats(ref_subgraphs, gen_subgraphs, is_parallel=True, compute_emd=self.compute_emd)
+                    sub_clust = clustering_stats(ref_subgraphs, gen_subgraphs, bins=100, is_parallel=True, compute_emd=self.compute_emd)
+                    to_log["subgraph_degree"] = sub_deg
+                    to_log["subgraph_clustering"] = sub_clust
+                    if wandb.run:
+                        wandb.run.summary["subgraph_degree"] = sub_deg
+                        wandb.run.summary["subgraph_clustering"] = sub_clust
+
+            if wandb.run:
+                wandb.run.summary["cograph_union_acc"] = union_valid
+                wandb.run.summary["cograph_union_subgraph_conn_acc"] = subgraph_conn
+
         if (
             "sbm" in self.metrics_list
             or "planar" in self.metrics_list
@@ -1875,3 +1973,35 @@ class WirelessSamplingMetrics:
                 pred_hists.append(hist)
 
         return compute_mmd(ref_hists, pred_hists, kernel=gaussian_tv, is_hist=True)
+
+
+class CographDenseSamplingMetrics(SpectreSamplingMetrics):
+    def __init__(self, datamodule):
+        super().__init__(
+            datamodule=datamodule,
+            compute_emd=False,
+            metrics_list=[
+                "degree",
+                "clustering",
+                "orbit",
+                "spectre",
+                "wavelet",
+                "cograph_join",
+            ],
+        )
+
+
+class CographSparseSamplingMetrics(SpectreSamplingMetrics):
+    def __init__(self, datamodule):
+        super().__init__(
+            datamodule=datamodule,
+            compute_emd=False,
+            metrics_list=[
+                "degree",
+                "clustering",
+                "orbit",
+                "spectre",
+                "wavelet",
+                "cograph_union",
+            ],
+        )
