@@ -220,6 +220,11 @@ def load_model_components(model_name):
         from src.metrics.val import CographSparseSamplingMetrics as MetricsClass
         from src.dataset.spectre import SpectreDatasetModule as DatasetClass
         wandb_name = "cograph-collab-sparse"
+    elif model_name == "collab_pure":
+        from configs.config_collab_pure import MainConfig
+        from src.metrics.val import CollabSamplingMetrics as MetricsClass
+        from src.dataset.spectre import SpectreDatasetModule as DatasetClass
+        wandb_name = "collab-pure"
     else:
         raise ValueError(f"Unknown model name: {model_name}")
     return MainConfig, MetricsClass, DatasetClass, wandb_name
