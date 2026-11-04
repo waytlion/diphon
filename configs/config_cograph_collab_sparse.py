@@ -12,8 +12,8 @@ class GeneralConfig:
     use_wandb: bool = True
     save_path: str = "results/"
     device: str = "cuda"
-    check_val_every_n_epochs: int = 200
-    save_checkpoint_every_n_epochs: int = 1000
+    check_val_every_n_epochs: int = 50
+    save_checkpoint_every_n_epochs: int = 50
 
 @dataclass
 class SamplerConfig:
@@ -86,7 +86,7 @@ class TrainConfig:
     eps_sde_train: float = 0.0001
     time_schedule_train: str = "cosine"
     time_schedule_power_train: float = 1.0
-    num_epochs: int = 10_000
+    num_epochs: int = 500
     lambda_train: float = 5.0
     use_ema: bool = True
     ema_decay: float = 0.999
