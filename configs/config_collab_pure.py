@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Any
 
 """
-Configuration for DiPhon on pure COLLAB (full dataset, up to 492 nodes).
+Configuration for DiPhon on pure COLLAB (N <= 200 nodes).
 """
 @dataclass
 class GeneralConfig:
@@ -34,7 +34,7 @@ class DataConfig:
     dir: str = str(Path(__file__).resolve().parents[3] / "data")
     data: str = "collab_pure"
     batch_size: int = 4
-    max_node_num: int = 492
+    max_node_num: int = 200
     max_feat_num: int = 1
     test_split: float = 0.1
     val_split: float = 0.1

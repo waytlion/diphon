@@ -1168,6 +1168,7 @@ def main():
             "cograph_zinc_dense", "cograph_zinc_sparse",
             "cograph_proteins_dense", "cograph_proteins_sparse",
             "cograph_collab_dense", "cograph_collab_sparse",
+            "collab_pure",
         ],
         help="Specific diffusion model/config type to use."
     )

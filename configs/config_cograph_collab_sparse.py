@@ -34,7 +34,7 @@ class DataConfig:
     dir: str = str(Path(__file__).resolve().parents[3] / "data")
     data: str = "cograph_collab_sparse"
     batch_size: int = 8
-    max_node_num: int = 100
+    max_node_num: int = 180
     max_feat_num: int = 1
     test_split: float = 0.2
     val_split: float = 0.1
