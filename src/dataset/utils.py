@@ -63,6 +63,17 @@ def compute_reference_metrics(datamodule, sampling_metrics, cache_name=None):
     os.makedirs(metrics_dir, exist_ok=True)
     metrics_path = os.path.join(metrics_dir, f"ref_metrics_{dataset_name}.pt")
 
+    # Invalidate the cache if the source .pkl changed (size + mtime fingerprint).
+    src = Path(datamodule.config.data.dir) / str(getattr(datamodule.config.data, "data", ""))
+    src = src if src.suffix == ".pkl" else src.with_name(src.name + ".pkl")
+    fp = f"{src.stat().st_size}:{src.stat().st_mtime_ns}" if src.exists() else None
+    fp_path = metrics_path + ".src"
+    if fp is not None and os.path.exists(metrics_path):
+        old = open(fp_path).read() if os.path.exists(fp_path) else None
+        if old != fp:
+            print(f"Source {src} changed or unknown -> recomputing {metrics_path}.")
+            os.remove(metrics_path)
+
     if os.path.exists(metrics_path):
         print(f"Loading cached sampling metrics from {metrics_path}.")
         ref_metrics = torch.load(metrics_path, map_location="cpu")
@@ -115,6 +126,9 @@ def compute_reference_metrics(datamodule, sampling_metrics, cache_name=None):
         print(f"  {split}: " + ", ".join(f"{k}={v:.4g}" if isinstance(v, (int, float)) else f"{k}" for k, v in metrics.items()))
 
     torch.save(ref_metrics, metrics_path)
+    if fp is not None:
+        with open(fp_path, "w") as f:
+            f.write(fp)
     print(f"Saved sampling metrics to {metrics_path}.")
     return ref_metrics
 
