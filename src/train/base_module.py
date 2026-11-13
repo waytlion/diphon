@@ -359,6 +359,12 @@ class DiffusionBaseModule(pl.LightningModule):
             wandb.log({"val/sampler": wandb.Image(fig)})
         close_figure(fig)
 
+        # Keep generated graphs so metrics can be recomputed offline.
+        out_dir = Path("checkpoints") / (getattr(self.cfg.general, "name", None) or self.cfg.data.data) / "val_samples"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        from src.dataset.utils import save_graphs_pickle
+        save_graphs_pickle(samples, out_dir / f"epoch{self.current_epoch}.pkl")
+
         self.sampling_metrics.reset()
         _ = self.sampling_metrics.forward(
             samples,

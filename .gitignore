@@ -228,3 +228,7 @@ data
 analysis/results/
 src/metrics/orca/tmp_*
 analysis/figures
+
+# symlinks to /data/horse on the cluster (patterns with "/" only match real dirs)
+checkpoints
+wandb
